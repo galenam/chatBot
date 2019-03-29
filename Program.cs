@@ -12,6 +12,11 @@ using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 
+
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.InlineQueryResults;
+using Telegram.Bot.Types.ReplyMarkups;
+
 namespace BotConsole
 {
     class Program
@@ -50,7 +55,27 @@ namespace BotConsole
             _botClient = new TelegramBotClient(appModel.BotConfiguration.BotToken, httpProxy);
 
             _botClient.OnMessage += Bot_OnMessage;
-            _botClient.StartReceiving();
+            _botClient.OnReceiveError += BotOnReceiveError;
+
+            _botClient.StartReceiving(Array.Empty<UpdateType>());
+            string name = string.Empty;
+            try
+            {
+                var tmp = _botClient.GetMeAsync();
+                name = tmp.Result.Username;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            Console.WriteLine($"Start listening for @{name}");
+            Console.ReadLine();
+            _botClient.StopReceiving();
+        }
+
+        private static void BotOnReceiveError(object sender, ReceiveErrorEventArgs e)
+        {
+            Console.WriteLine(e);
         }
 
         private static async void Bot_OnMessage(object sender, MessageEventArgs e)
@@ -60,8 +85,8 @@ namespace BotConsole
                 var me = await _botClient.GetMeAsync();
                 //System.Console.WriteLine($"Hello! My name is {me.FirstName}");
                 Message message = await _botClient.SendTextMessageAsync(
-      chatId: 0,//e.Message.Chat, // or a chat id: 123456789
-      text: "test");
+      chatId: e.Message.Chat.Id, // or a chat id: 123456789
+      text: e.Message.Text);
             }
             catch (Exception ex)
             {
