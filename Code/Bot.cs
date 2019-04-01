@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 
-namespace Code
+namespace BotConsole.Code
 {
     public class Bot
     {

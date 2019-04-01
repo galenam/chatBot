@@ -1,13 +1,13 @@
 using System;
 using System.Threading.Tasks;
-using Bot.Model;
-using Interfaces;
+using BotConsole.Model;
+using BotConsole.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using RequestModels;
-using ResponseModels;
+using BotConsole.RequestModels;
+using BotConsole.ResponseModels;
 
-namespace Code
+namespace BotConsole.Code.Repositories
 {
     public class DBReminderRepository : IDBReminderRepository
     {

@@ -11,11 +11,10 @@ using System.Net;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
-
-
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
+using BotConsole.Const;
 
 namespace BotConsole
 {
@@ -83,10 +82,24 @@ namespace BotConsole
             try
             {
                 var me = await _botClient.GetMeAsync();
+                var text = e.Message.Text;
+                var resultText = string.Empty;
+                if (string.IsNullOrEmpty(text))
+                {
+                    resultText = "Please, choose the command";
+                    return;
+                }
+                switch (text)
+                {
+                    case var included when text.ToLower().Contains(CommandConst.Reminder):
+                        // todo: добавить напоминания на всех будущие (???) дз 
+                        break;
+                }
+
                 //System.Console.WriteLine($"Hello! My name is {me.FirstName}");
-                Message message = await _botClient.SendTextMessageAsync(
-      chatId: e.Message.Chat.Id, // or a chat id: 123456789
-      text: e.Message.Text);
+                //             Message message = await _botClient.SendTextMessageAsync(
+                //   chatId: e.Message.Chat.Id, // or a chat id: 123456789
+                //   text: e.Message.Text);
             }
             catch (Exception ex)
             {
