@@ -3,41 +3,63 @@ using Model;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Args;
+using System;
+using BotConsole.Interfaces;
+using BotConsole.Const;
 
 namespace BotConsole.Code
 {
-    public class Bot
+    public class Bot : IBot
     {
         static TelegramBotClient _botClient;
-        public Bot(ApplicationModel appSettings)
+        public Bot(string botToken, WebProxy httpProxy)
         {
-            NetworkCredential credentials = null;
-            var userName = appSettings.ProxyConfiguration.UserName;
-            var password = appSettings.ProxyConfiguration.Password;
-            if (!string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password))
-                credentials = new NetworkCredential(userName, password);
-            var httpProxy = new WebProxy(appSettings.ProxyConfiguration.Url, appSettings.ProxyConfiguration.Port)
-            {
-                Credentials = credentials
-            };
+            _botClient = new TelegramBotClient(botToken, httpProxy);
 
-            _botClient = new TelegramBotClient(appSettings.BotConfiguration.BotToken, httpProxy);
-
+            _botClient.OnReceiveError += BotOnReceiveError;
             _botClient.OnMessage += Bot_OnMessage;
             _botClient.StartReceiving();
         }
 
-        public async void Bot_OnMessage(object sender, MessageEventArgs e)
+        private void BotOnReceiveError(object sender, ReceiveErrorEventArgs e)
         {
-            if (e.Message.Text != null)
-            {
-                //Console.WriteLine($"Received a text message in chat {e.Message.Chat.Id}.");
+            throw new NotImplementedException();
+        }
 
-                await _botClient.SendTextMessageAsync(
-                  chatId: e.Message.Chat,
-                  text: "You said:\n" + e.Message.Text
-                );
+        private static async void Bot_OnMessage(object sender, MessageEventArgs e)
+        {
+            try
+            {
+                var me = await _botClient.GetMeAsync();
+                var text = e.Message.Text;
+                var resultText = string.Empty;
+                if (string.IsNullOrEmpty(text))
+                {
+                    resultText = "Please, choose the command";
+                    return;
+                }
+                switch (text)
+                {
+                    case var included when text.ToLower().Contains(CommandConst.Reminder):
+                        // todo: добавить напоминания на всех будущие (???) дз 
+                        break;
+                }
+
+                //System.Console.WriteLine($"Hello! My name is {me.FirstName}");
+                //             Message message = await _botClient.SendTextMessageAsync(
+                //   chatId: e.Message.Chat.Id, // or a chat id: 123456789
+                //   text: e.Message.Text);
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex + "Error message sending");
+            }
+        }
+
+
+        public void Stop()
+        {
+            _botClient.StopReceiving();
         }
     }
 

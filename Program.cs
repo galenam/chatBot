@@ -8,13 +8,7 @@ using Quartz.Impl;
 using Microsoft.Extensions.Configuration.FileExtensions;
 using System.Threading.Tasks;
 using System.Net;
-using Telegram.Bot;
-using Telegram.Bot.Args;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InlineQueryResults;
-using Telegram.Bot.Types.ReplyMarkups;
-using BotConsole.Const;
+using BotConsole.Code;
 
 namespace BotConsole
 {
@@ -22,7 +16,7 @@ namespace BotConsole
     {
         static IScheduler Scheduler;
         static ApplicationModel appModel;
-        static TelegramBotClient _botClient;
+        static Bot _botClient;
 
         public static async Task Main(string[] args)
         {
@@ -51,60 +45,10 @@ namespace BotConsole
                 Credentials = credentials
             };
 
-            _botClient = new TelegramBotClient(appModel.BotConfiguration.BotToken, httpProxy);
-
-            _botClient.OnMessage += Bot_OnMessage;
-            _botClient.OnReceiveError += BotOnReceiveError;
-
-            _botClient.StartReceiving(Array.Empty<UpdateType>());
-            string name = string.Empty;
-            try
-            {
-                var tmp = _botClient.GetMeAsync();
-                name = tmp.Result.Username;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-            Console.WriteLine($"Start listening for @{name}");
+            _botClient = new Bot(appModel.BotConfiguration.BotToken, httpProxy);
             Console.ReadLine();
-            _botClient.StopReceiving();
+            _botClient.Stop();
         }
 
-        private static void BotOnReceiveError(object sender, ReceiveErrorEventArgs e)
-        {
-            Console.WriteLine(e);
-        }
-
-        private static async void Bot_OnMessage(object sender, MessageEventArgs e)
-        {
-            try
-            {
-                var me = await _botClient.GetMeAsync();
-                var text = e.Message.Text;
-                var resultText = string.Empty;
-                if (string.IsNullOrEmpty(text))
-                {
-                    resultText = "Please, choose the command";
-                    return;
-                }
-                switch (text)
-                {
-                    case var included when text.ToLower().Contains(CommandConst.Reminder):
-                        // todo: добавить напоминания на всех будущие (???) дз 
-                        break;
-                }
-
-                //System.Console.WriteLine($"Hello! My name is {me.FirstName}");
-                //             Message message = await _botClient.SendTextMessageAsync(
-                //   chatId: e.Message.Chat.Id, // or a chat id: 123456789
-                //   text: e.Message.Text);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex + "Error message sending");
-            }
-        }
     }
 }

@@ -4,6 +4,6 @@ namespace BotConsole.Interfaces
 {
     public interface IBot
     {
-        void Bot_OnMessage(object sender, MessageEventArgs e);
+        void Stop();
     }
 }
