@@ -9,6 +9,10 @@ using Microsoft.Extensions.Configuration.FileExtensions;
 using System.Threading.Tasks;
 using System.Net;
 using BotConsole.Code;
+using Microsoft.Extensions.Logging;
+using NLog;
+using NLog.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BotConsole
 {
@@ -44,10 +48,28 @@ namespace BotConsole
             {
                 Credentials = credentials
             };
-
-            _botClient = new Bot(appModel.BotConfiguration.BotToken, httpProxy);
+            var servicesProvider = BuildDi();
+            _botClient = servicesProvider.GetRequiredService<Bot>();
+            _botClient.Start(appModel.BotConfiguration.BotToken, httpProxy);
             Console.ReadLine();
             _botClient.Stop();
+            NLog.LogManager.Shutdown();
+        }
+
+        private static ServiceProvider BuildDi()
+        {
+            return new ServiceCollection()
+                .AddLogging(builder =>
+                {
+                    builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+                    builder.AddNLog(new NLogProviderOptions
+                    {
+                        CaptureMessageTemplates = true,
+                        CaptureMessageProperties = true
+                    });
+                })
+                .AddSingleton<Bot>()
+                .BuildServiceProvider();
         }
 
     }

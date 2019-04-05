@@ -6,16 +6,22 @@ using Telegram.Bot.Args;
 using System;
 using BotConsole.Interfaces;
 using BotConsole.Const;
+using Microsoft.Extensions.Logging;
 
 namespace BotConsole.Code
 {
     public class Bot : IBot
     {
         static TelegramBotClient _botClient;
-        public Bot(string botToken, WebProxy httpProxy)
+        ILogger<Bot> _logger;
+        public Bot(ILogger<Bot> logger)
+        {
+            _logger = logger;
+        }
+
+        public void Start(string botToken, WebProxy httpProxy)
         {
             _botClient = new TelegramBotClient(botToken, httpProxy);
-
             _botClient.OnReceiveError += BotOnReceiveError;
             _botClient.OnMessage += Bot_OnMessage;
             _botClient.StartReceiving();
@@ -55,7 +61,6 @@ namespace BotConsole.Code
                 Console.WriteLine(ex + "Error message sending");
             }
         }
-
 
         public void Stop()
         {
