@@ -8,6 +8,5 @@ namespace BotConsole.Interfaces
     public interface IRegisterJob
     {
         Task CreateJob<T>(string jobName, IDictionary<string, object> map, DateTime dateOfReminder) where T : IJob;
-        //Task TempMethod();
     }
 }

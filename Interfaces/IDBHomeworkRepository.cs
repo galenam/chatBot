@@ -7,5 +7,7 @@ namespace BotConsole.Interfaces
     public interface IDBHomeworkRepository
     {
         Task<CreateHomeWorkResponse> SaveHomeworkInDB(CreateHomeWorkRequest data);
+
+        GetNextHomeWorkResponse GetNextHomeWork(GetNextHomeWorkRequest data);
     }
 }

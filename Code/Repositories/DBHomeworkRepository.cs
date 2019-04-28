@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using BotConsole.RequestModels;
 using BotConsole.ResponseModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
+using System.Linq;
 
 namespace BotConsole.Code.Repositories
 {
@@ -19,6 +21,39 @@ namespace BotConsole.Code.Repositories
         {
             _context = context;
             _logger = logger;
+        }
+
+        public GetNextHomeWorkResponse GetNextHomeWork(GetNextHomeWorkRequest data)
+        {
+            var result = new GetNextHomeWorkResponse { IsExisted = false };
+            if (data == null || string.IsNullOrEmpty(data.ChatId)) return result;
+
+            var hws = _context.User.Join(_context.UserHomeWork,
+                User => User.Id, UserHomeWork => UserHomeWork.UserId,
+                (User, UserHomeWork) => new
+                {
+                    ChatId = User.ChatId,
+                    HomeWorkId = UserHomeWork.HomeWorkId,
+                    UserId = User.Id
+                }).Join(_context.HomeWork, Ids => Ids.HomeWorkId, HomeWork => HomeWork.Id,
+                (Ids, HomeWork) => new
+                {
+                    ChatId = Ids.ChatId,
+                    HomeWorkId = HomeWork.Id,
+                    DateOfReadyness = HomeWork.DateOfReadyness,
+                    Title = HomeWork.Title,
+                    UserId = Ids.UserId
+                }).FirstOrDefault();
+            if (hws != null)
+            {
+                result.IsExisted = true;
+                result.HomeWorkId = hws.HomeWorkId;
+                result.Title = hws.Title;
+                result.DateOfReadyness = hws.DateOfReadyness.HasValue ? new DateTime(hws.DateOfReadyness.Value) : default;
+                result.UserId = hws.UserId;
+            }
+
+            return result;
         }
 
         public async Task<CreateHomeWorkResponse> SaveHomeworkInDB(CreateHomeWorkRequest data)

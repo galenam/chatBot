@@ -16,7 +16,7 @@ namespace BotConsole.Model
         public long Id { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
-        public string Login { get; set; }
+        public string ChatId { get; set; }
 
         public ICollection<ActionUserSend> ActionUserSend { get; set; }
         public ICollection<HomeWorkUserSend> HomeWorkUserSend { get; set; }

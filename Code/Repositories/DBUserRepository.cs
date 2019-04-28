@@ -30,14 +30,14 @@ namespace BotConsole.Code.Repositories
             }
             var result = new CreateUserResponse() { Result = false };
 
-            if (await _context.User.FirstOrDefaultAsync(u => u.Name == data.Name && u.Surname == data.Surname && u.Login == data.Login) != null)
+            if (await _context.User.FirstOrDefaultAsync(u => u.Name == data.Name && u.Surname == data.Surname && u.ChatId == data.ChatId) != null)
             {
                 _logger.LogInformation("dublicate");
                 return result;
             }
             try
             {
-                await _context.User.AddAsync(new User { Name = data.Name, Surname = data.Surname, Login = data.Login });
+                await _context.User.AddAsync(new User { Name = data.Name, Surname = data.Surname, ChatId = data.ChatId });
                 await _context.SaveChangesAsync();
                 result.Result = true;
                 return result;

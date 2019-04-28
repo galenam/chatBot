@@ -4,6 +4,6 @@ namespace BotConsole.RequestModels
     {
         public string Name { get; set; }
         public string Surname { get; set; }
-        public string Login { get; set; }
+        public string ChatId { get; set; }
     }
 }

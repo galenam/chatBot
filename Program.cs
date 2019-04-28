@@ -13,31 +13,26 @@ using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using BotConsole.Code.Repositories;
+using BotConsole.Interfaces;
+using BotConsole.Jobs;
+using BotConsole.Model;
+using Microsoft.EntityFrameworkCore;
+using Quartz.Core;
 
 namespace BotConsole
 {
     class Program
     {
-        static IScheduler Scheduler;
-        static ApplicationModel appModel;
-        static Bot _botClient;
-
-        public static async Task Main(string[] args)
+        public static void Main(string[] args)
         {
-            var props = new NameValueCollection
-            {
-                { "quartz.serializer.type", "binary" }
-            };
-            var factory = new StdSchedulerFactory(props);
-
-            Scheduler = await factory.GetScheduler();
-            await Scheduler.Start();
             var builder = new ConfigurationBuilder()
                             .SetBasePath(Directory.GetCurrentDirectory())
                             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
             IConfigurationRoot configuration = builder.Build();
-            appModel = configuration.GetSection("ApplicationModel").Get<ApplicationModel>();
+            var section = configuration.GetSection("ApplicationModel");
+            var appModel = section.Get<ApplicationModel>();
 
             NetworkCredential credentials = null;
             var userName = appModel.ProxyConfiguration.UserName;
@@ -48,17 +43,24 @@ namespace BotConsole
             {
                 Credentials = credentials
             };
-            var servicesProvider = BuildDi();
-            _botClient = servicesProvider.GetRequiredService<Bot>();
+            var connecionString = configuration.GetConnectionString("BotDBConnection");
+            var servicesProvider = BuildDi(connecionString, section);
+            var _botClient = servicesProvider.GetRequiredService<IBot>();
             _botClient.Start(appModel.BotConfiguration.BotToken, httpProxy);
+
+            var schedBor = servicesProvider.GetRequiredService<ISchedulerBot>();
+            var logger = servicesProvider.GetRequiredService<ILogger<DIJobFactory>>();
+            schedBor.StartScheduler();
+            schedBor.Scheduler.JobFactory = new DIJobFactory(logger, servicesProvider);
+
             Console.ReadLine();
             _botClient.Stop();
             NLog.LogManager.Shutdown();
         }
 
-        private static ServiceProvider BuildDi()
+        private static ServiceProvider BuildDi(string connectionString, IConfigurationSection section)
         {
-            return new ServiceCollection()
+            var sCollection = new ServiceCollection()
                 .AddLogging(builder =>
                 {
                     builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
@@ -68,8 +70,15 @@ namespace BotConsole
                         CaptureMessageProperties = true
                     });
                 })
-                .AddSingleton<Bot>()
-                .BuildServiceProvider();
+                .AddSingleton<IBot, Bot>()
+                .AddScoped<IDBHomeworkRepository, DBHomeworkRepository>()
+                .AddScoped<IDBReminderRepository, DBReminderRepository>()
+                .AddScoped<IRegisterJob, RegisterJob>()
+                .AddScoped<IReminderJob, ReminderJob>()
+                .AddDbContext<BotDBContext>(options => options.UseSqlite(connectionString))
+                .AddSingleton<ISchedulerBot, SchedulerBot>();
+            sCollection.Configure<ApplicationModel>(section);
+            return sCollection.BuildServiceProvider();
         }
 
     }

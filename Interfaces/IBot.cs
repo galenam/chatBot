@@ -1,4 +1,5 @@
 using System.Net;
+using System.Threading.Tasks;
 using Telegram.Bot.Args;
 
 namespace BotConsole.Interfaces
@@ -7,5 +8,7 @@ namespace BotConsole.Interfaces
     {
         void Start(string botToken, WebProxy httpProxy);
         void Stop();
+
+        Task Send(string chatId, string text);
     }
 }
