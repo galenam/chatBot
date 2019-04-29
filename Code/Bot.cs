@@ -3,42 +3,116 @@ using Model;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Args;
+using System;
+using BotConsole.Interfaces;
+using BotConsole.Const;
+using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using BotConsole.Jobs;
+using Telegram.Bot.Types;
 
-namespace Code
+namespace BotConsole.Code
 {
-    public class Bot
+    public class Bot : IBot
     {
         static TelegramBotClient _botClient;
-        public Bot(ApplicationModel appSettings)
+        static ILogger<Bot> _logger;
+        static IDBHomeworkRepository _dbHomeworkRepository;
+        static IDBReminderRepository _dbReminderRepository;
+        static ApplicationModel _appModel;
+
+        static IRegisterJob _registerJob;
+        public Bot(ILogger<Bot> logger, IDBHomeworkRepository dbBHomeworkRepository, IOptions<ApplicationModel> options,
+        IDBReminderRepository dbReminderRepository, IRegisterJob registerJob)
         {
-            NetworkCredential credentials = null;
-            var userName = appSettings.ProxyConfiguration.UserName;
-            var password = appSettings.ProxyConfiguration.Password;
-            if (!string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password))
-                credentials = new NetworkCredential(userName, password);
-            var httpProxy = new WebProxy(appSettings.ProxyConfiguration.Url, appSettings.ProxyConfiguration.Port)
-            {
-                Credentials = credentials
-            };
+            _logger = logger;
+            _dbHomeworkRepository = dbBHomeworkRepository;
+            _dbReminderRepository = dbReminderRepository;
+            _appModel = options.Value;
+            _registerJob = registerJob;
+        }
 
-            _botClient = new TelegramBotClient(appSettings.BotConfiguration.BotToken, httpProxy);
-
+        public void Start(string botToken, WebProxy httpProxy)
+        {
+            _botClient = new TelegramBotClient(botToken, httpProxy);
+            _botClient.OnReceiveError += BotOnReceiveError;
             _botClient.OnMessage += Bot_OnMessage;
             _botClient.StartReceiving();
         }
 
-        public async void Bot_OnMessage(object sender, MessageEventArgs e)
+        private void BotOnReceiveError(object sender, ReceiveErrorEventArgs e)
         {
-            if (e.Message.Text != null)
-            {
-                //Console.WriteLine($"Received a text message in chat {e.Message.Chat.Id}.");
+            _logger.LogError($"InnerException={e.ApiRequestException.InnerException}, Message={e.ApiRequestException.Message}");
+        }
 
-                await _botClient.SendTextMessageAsync(
-                  chatId: e.Message.Chat,
-                  text: "You said:\n" + e.Message.Text
-                );
+        private static async void Bot_OnMessage(object sender, MessageEventArgs e)
+        {
+            try
+            {
+                var me = await _botClient.GetMeAsync();
+                var text = e.Message.Text;
+                var resultText = string.Empty;
+                if (string.IsNullOrEmpty(text))
+                {
+                    resultText = "Please, choose the command";
+                    return;
+                }
+                //_logger.LogError(text);
+                switch (text)
+                {
+                    case var included when text.ToLower().Contains(CommandConst.Reminder):
+                        bool reminderCreated = await CreateReminder(e.Message.Chat.Id.ToString());
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex + "Error message sending");
             }
         }
-    }
 
+        private static async Task<bool> CreateReminder(string id)
+        {
+            // todo : исправить вызов и обработку результата
+            var homeWork = _dbHomeworkRepository.GetNextHomeWork(new RequestModels.GetNextHomeWorkRequest { ChatId = id });
+            if (homeWork == null || !homeWork.IsExisted) return false;
+            DateTime dateOfReminder = DateTime.Now;
+            if (homeWork.DateOfReadyness.HasValue)
+            {
+                dateOfReminder = homeWork.DateOfReadyness.Value.Subtract(new TimeSpan(_appModel?.ReminderSettings?.Days ?? 0,
+                _appModel?.ReminderSettings?.Hours ?? 0, _appModel?.ReminderSettings?.Minutes ?? 0,
+                0));
+            }
+            if (dateOfReminder.CompareTo(DateTime.Now) <= 0)
+            {
+                dateOfReminder = DateTime.Now.AddDays(_appModel?.ReminderSettings?.Days ?? 0)
+                .AddHours(_appModel?.ReminderSettings?.Hours ?? 0)
+                .AddMinutes(_appModel?.ReminderSettings?.Minutes ?? 0);
+            }
+            var saveResult = await _dbReminderRepository.SaveReminderInDB(new RequestModels.CreateHomeWorkReminderRequest
+            {
+                UserId = homeWork.UserId,
+                HomeWorkId = homeWork.HomeWorkId,
+                DateOfReminder = dateOfReminder
+            });
+
+            var dict = new Dictionary<string, object> { { ReminderJobConst.ChatId, id },
+            { ReminderJobConst.HomeWordId, homeWork.HomeWorkId } };
+            await _registerJob.CreateJob<IReminderJob>(ReminderJobConst.Reminder, dict, /* dateOfReminder*/DateTime.Now.AddSeconds(5));
+            return saveResult != null && saveResult.Result;
+        }
+
+        public void Stop()
+        {
+            _botClient.StopReceiving();
+        }
+
+        public async Task Send(string chatId, string text)
+        {
+            Message message = await _botClient.SendTextMessageAsync(
+              chatId: chatId, // or a chat id: 123456789
+              text: text);
+        }
+    }
 }

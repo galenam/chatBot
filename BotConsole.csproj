@@ -9,12 +9,19 @@
   <ItemGroup>
       <PackageReference Include="Quartz" Version="3.0.5" />
     <PackageReference Include="Telegram.Bot" Version="14.10.0" />
-    <PackageReference Include="NLog.Web.AspNetCore" Version="4.5.0-rc2" />
+    <PackageReference Include="NLog" Version="4.6.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.1"/>
+   <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.0.2" />
+       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.0.2" />
+       <PackageReference Include="NLog.Extensions.Logging" Version="1.5.0-rc1"/>
+    <PackageReference Include="Quartz" Version="3.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.1.1"/>
   </ItemGroup>
-
+  <ItemGroup>
+    <None Include="nlog.config" CopyToOutputDirectory="Always" />
+</ItemGroup>
 </Project>
