@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using BotConsole.Jobs;
 using Telegram.Bot.Types;
+using System.Text.RegularExpressions;
 
 namespace BotConsole.Code
 {
@@ -21,6 +22,8 @@ namespace BotConsole.Code
         static IDBHomeworkRepository _dbHomeworkRepository;
         static IDBReminderRepository _dbReminderRepository;
         static ApplicationModel _appModel;
+        static Regex _rg = new Regex($"/{ReminderJobConst.Reminder}\\s*(?<{userHours}>\\d+)$");
+        const string userHours = "userHours";
 
         static IRegisterJob _registerJob;
         public Bot(ILogger<Bot> logger, IDBHomeworkRepository dbBHomeworkRepository, IOptions<ApplicationModel> options,
@@ -58,11 +61,17 @@ namespace BotConsole.Code
                     resultText = "Please, choose the command";
                     return;
                 }
-                //_logger.LogError(text);
                 switch (text)
                 {
                     case var included when text.ToLower().Contains(CommandConst.Reminder):
-                        bool reminderCreated = await CreateReminder(e.Message.Chat.Id.ToString());
+                        int hours = 0;
+                        // todo: поправить regex , неправилньо введено имч группы
+                        if (_rg.IsMatch(text))
+                        {
+                            int.TryParse(_rg.Match(text).Groups[userHours].Value, out hours);
+                        }
+                        bool reminderCreated = await CreateReminder(e.Message.Chat.Id.ToString(),
+                        hours > 0 ? hours : (_appModel.ReminderSettings.Hours ?? 0));
                         break;
                 }
             }
@@ -72,17 +81,14 @@ namespace BotConsole.Code
             }
         }
 
-        private static async Task<bool> CreateReminder(string id)
+        private static async Task<bool> CreateReminder(string id, int hours)
         {
-            // todo : исправить вызов и обработку результата
             var homeWork = _dbHomeworkRepository.GetNextHomeWork(new RequestModels.GetNextHomeWorkRequest { ChatId = id });
             if (homeWork == null || !homeWork.IsExisted) return false;
             DateTime dateOfReminder = DateTime.Now;
             if (homeWork.DateOfReadyness.HasValue)
             {
-                dateOfReminder = homeWork.DateOfReadyness.Value.Subtract(new TimeSpan(_appModel?.ReminderSettings?.Days ?? 0,
-                _appModel?.ReminderSettings?.Hours ?? 0, _appModel?.ReminderSettings?.Minutes ?? 0,
-                0));
+                dateOfReminder = homeWork.DateOfReadyness.Value.Subtract(new TimeSpan(0, hours, 0, 0));
             }
             if (dateOfReminder.CompareTo(DateTime.Now) <= 0)
             {
@@ -99,7 +105,7 @@ namespace BotConsole.Code
 
             var dict = new Dictionary<string, object> { { ReminderJobConst.ChatId, id },
             { ReminderJobConst.HomeWordId, homeWork.HomeWorkId } };
-            await _registerJob.CreateJob<IReminderJob>(ReminderJobConst.Reminder, dict, /* dateOfReminder*/DateTime.Now.AddSeconds(5));
+            await _registerJob.CreateJob<IReminderJob>(ReminderJobConst.Reminder, dict, /* DateTime.Now.AddSeconds(5)*/dateOfReminder);
             return saveResult != null && saveResult.Result;
         }
 
@@ -111,7 +117,7 @@ namespace BotConsole.Code
         public async Task Send(string chatId, string text)
         {
             Message message = await _botClient.SendTextMessageAsync(
-              chatId: chatId, // or a chat id: 123456789
+              chatId: chatId,
               text: text);
         }
     }

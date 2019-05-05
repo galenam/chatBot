@@ -9,5 +9,7 @@ namespace BotConsole.Interfaces
         Task<CreateHomeWorkResponse> SaveHomeworkInDB(CreateHomeWorkRequest data);
 
         GetNextHomeWorkResponse GetNextHomeWork(GetNextHomeWorkRequest data);
+
+        Task<HomeworkResponse> GetHomeworkById(long id);
     }
 }

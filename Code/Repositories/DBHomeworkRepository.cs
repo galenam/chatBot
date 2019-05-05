@@ -23,6 +23,13 @@ namespace BotConsole.Code.Repositories
             _logger = logger;
         }
 
+        public async Task<HomeworkResponse> GetHomeworkById(long id)
+        {
+            if (id < 0) return new HomeworkResponse();
+            var hw = await _context.HomeWork.FirstOrDefaultAsync(hws => hws.Id == id);
+            return hw == null ? new HomeworkResponse() : new HomeworkResponse { Title = hw.Title, Id = id };
+        }
+
         public GetNextHomeWorkResponse GetNextHomeWork(GetNextHomeWorkRequest data)
         {
             var result = new GetNextHomeWorkResponse { IsExisted = false };
@@ -40,16 +47,22 @@ namespace BotConsole.Code.Repositories
                 {
                     ChatId = Ids.ChatId,
                     HomeWorkId = HomeWork.Id,
-                    DateOfReadyness = HomeWork.DateOfReadyness,
+                    DateOfReadyness = HomeWork.DateOfReadyness.HasValue ? new DateTime(HomeWork.DateOfReadyness.Value) : default(DateTime?),
                     Title = HomeWork.Title,
                     UserId = Ids.UserId
-                }).FirstOrDefault();
+                })
+                .Where(hw => hw.DateOfReadyness.HasValue && DateTime.Now.CompareTo(hw.DateOfReadyness.Value) < 0)
+                .OrderBy(hw => hw.DateOfReadyness)
+                .FirstOrDefault();
+            //todo: исправить дату today homework в ticks на сегодня+2 часа+2 минуты, получить reminder в telegram
+            // сейчас бот пишет exception времени больше (по ощущениям) 20 секунд 
+            //todo: сделать несколько еще homework в будущем, проверить, что фильтр + orderby работают правильно
             if (hws != null)
             {
                 result.IsExisted = true;
                 result.HomeWorkId = hws.HomeWorkId;
                 result.Title = hws.Title;
-                result.DateOfReadyness = hws.DateOfReadyness.HasValue ? new DateTime(hws.DateOfReadyness.Value) : default;
+                result.DateOfReadyness = hws.DateOfReadyness;
                 result.UserId = hws.UserId;
             }
 

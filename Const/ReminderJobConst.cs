@@ -2,10 +2,14 @@ namespace BotConsole.Const
 {
     public static class ReminderJobConst
     {
-        public static string ChatId { get; } = "ChatId";
-        public static string HomeWordId { get; } = "HomeWordId";
+        public const string ChatId = "ChatId";
+        public const string HomeWordId = "HomeWordId";
 
-        public static string Bot { get; } = "Bot";
-        public static string Reminder { get; } = "reminder";
+        public const string Bot = "Bot";
+        public const string Reminder = "reminder";
+
+        public const string BeginMessage = "You should send ";
+
+        public const string DefaultHomeworkTitle = "your homework";
     }
 }
