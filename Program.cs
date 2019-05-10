@@ -32,21 +32,11 @@ namespace BotConsole
 
             IConfigurationRoot configuration = builder.Build();
             var section = configuration.GetSection("ApplicationModel");
-            var appModel = section.Get<ApplicationModel>();
 
-            NetworkCredential credentials = null;
-            var userName = appModel.ProxyConfiguration.UserName;
-            var password = appModel.ProxyConfiguration.Password;
-            if (!string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password))
-                credentials = new NetworkCredential(userName, password);
-            var httpProxy = new WebProxy(appModel.ProxyConfiguration.Url, appModel.ProxyConfiguration.Port)
-            {
-                Credentials = credentials
-            };
             var connecionString = configuration.GetConnectionString("BotDBConnection");
             var servicesProvider = BuildDi(connecionString, section);
             var _botClient = servicesProvider.GetRequiredService<IBot>();
-            _botClient.Start(appModel.BotConfiguration.BotToken, httpProxy);
+            _botClient.Start();
 
             var schedBor = servicesProvider.GetRequiredService<ISchedulerBot>();
             var logger = servicesProvider.GetRequiredService<ILogger<DIJobFactory>>();

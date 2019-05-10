@@ -35,10 +35,18 @@ namespace BotConsole.Code
             _appModel = options.Value;
             _registerJob = registerJob;
         }
-
-        public void Start(string botToken, WebProxy httpProxy)
+        public void Start()
         {
-            _botClient = new TelegramBotClient(botToken, httpProxy);
+            NetworkCredential credentials = null;
+            var userName = _appModel.ProxyConfiguration.UserName;
+            var password = _appModel.ProxyConfiguration.Password;
+            if (!string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password))
+                credentials = new NetworkCredential(userName, password);
+            var httpProxy = new WebProxy(_appModel.ProxyConfiguration.Url, _appModel.ProxyConfiguration.Port)
+            {
+                Credentials = credentials
+            };
+            _botClient = new TelegramBotClient(_appModel.BotConfiguration.BotToken, httpProxy);
             _botClient.OnReceiveError += BotOnReceiveError;
             _botClient.OnMessage += Bot_OnMessage;
             _botClient.StartReceiving();
@@ -65,7 +73,6 @@ namespace BotConsole.Code
                 {
                     case var included when text.ToLower().Contains(CommandConst.Reminder):
                         int hours = 0;
-                        // todo: поправить regex , неправилньо введено имч группы
                         if (_rg.IsMatch(text))
                         {
                             int.TryParse(_rg.Match(text).Groups[userHours].Value, out hours);
@@ -77,7 +84,7 @@ namespace BotConsole.Code
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex + "Error message sending");
+                Console.WriteLine($"Ex.InnerException={ex.InnerException}, Ex.StackTrace={ex.StackTrace}" + "Error message sending");
             }
         }
 
@@ -105,7 +112,7 @@ namespace BotConsole.Code
 
             var dict = new Dictionary<string, object> { { ReminderJobConst.ChatId, id },
             { ReminderJobConst.HomeWordId, homeWork.HomeWorkId } };
-            await _registerJob.CreateJob<IReminderJob>(ReminderJobConst.Reminder, dict, /* DateTime.Now.AddSeconds(5)*/dateOfReminder);
+            await _registerJob.CreateJob<IReminderJob>(ReminderJobConst.Reminder, dict, dateOfReminder);
             return saveResult != null && saveResult.Result;
         }
 
@@ -114,11 +121,20 @@ namespace BotConsole.Code
             _botClient.StopReceiving();
         }
 
-        public async Task Send(string chatId, string text)
+        public async Task<bool> Send(string chatId, string text)
         {
-            Message message = await _botClient.SendTextMessageAsync(
-              chatId: chatId,
-              text: text);
+            try
+            {
+                Message message = await _botClient.SendTextMessageAsync(
+                  chatId: chatId,
+                  text: text);
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(0, e, $"Bot.Send, Inner Exception = {e.InnerException}, Stack = {e.StackTrace}");
+            }
+            return false;
         }
     }
 }

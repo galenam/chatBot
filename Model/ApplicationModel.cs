@@ -13,6 +13,7 @@ namespace Model
         public int? Days { get; set; }
         public int? Hours { get; set; }
         public int? Minutes { get; set; }
+        public int RepeatNumber { get; set; } = 1;
     }
 
     public class BotConfiguration
