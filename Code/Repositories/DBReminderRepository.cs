@@ -19,33 +19,72 @@ namespace BotConsole.Code.Repositories
             _context = context;
             _logger = logger;
         }
+        // todo: все обращения к бд обернуть в try-catch с логированием ошибок
 
+        // todo: обновлять время напоминалки, если такая напоминалка существует
         public async Task<CreateHomeWorkReminderResponse> SaveReminderInDB(CreateHomeWorkReminderRequest data)
         {
-            _logger.LogInformation("SaveReminderInDB begin");
             if (data == null)
             {
                 return null;
             }
             var result = new CreateHomeWorkReminderResponse() { Result = false };
-
-            if (await _context.UserHomeWorkReminder.FirstOrDefaultAsync(uhwr => uhwr.HomeWorkId == data.HomeWorkId && uhwr.UserId == data.UserId && uhwr.DateTimeSend == data.DateOfReminder.Ticks) != null)
+            var reminder = await _context.UserHomeWorkReminder.FirstOrDefaultAsync(uhwr => uhwr.HomeWorkId == data.HomeWorkId && uhwr.UserId == data.UserId && uhwr.DateTimeSend == data.DateOfReminder.Ticks);
+            if (reminder != null)
             {
-                _logger.LogInformation("dublicate");
-                return result;
+                if (reminder.DateTimeSend.CompareTo(data.DateOfReminder.Ticks) != 0 && data.DateOfReminder.CompareTo(DateTime.Now) > 0)
+                {
+                    reminder.DateTimeSend = data.DateOfReminder.Ticks;
+                    try
+                    {
+                        _context.UserHomeWorkReminder.Update(reminder);
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"inner={ex.InnerException}, StackTrace={ex.StackTrace}");
+                    }
+                }
+                result.Id = reminder.Id;
             }
+            else
+            {
+                try
+                {
+                    var addedReminder = new UserHomeWorkReminder { HomeWorkId = data.HomeWorkId, UserId = data.UserId, DateTimeSend = data.DateOfReminder.Ticks };
+                    await _context.UserHomeWorkReminder.AddAsync(addedReminder);
+                    await _context.SaveChangesAsync();
+                    result.Result = true;
+                    // todo проверить, что при добавлении новой напоминалки на дз, на которое еще нет напоминалок, возвращается Id
+                    result.Id = addedReminder.Id;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"inner={ex.InnerException}, StackTrace={ex.StackTrace}");
+                }
+            }
+            return result;
+        }
+
+        public async Task<UpdatedReminderResponse> UpdateReminder(UpdatedReminderRequest request)
+        {
+            var result = new UpdatedReminderResponse { Result = false };
+            if (request == null) return result;
+            var reminder = await _context.UserHomeWorkReminder.FirstAsync(uhr => uhr.Id == request.Id);
+            if (reminder == null) return result;
+            reminder.IsSend = request.IsSend ? 1 : 0;
+            reminder.DateTimeSend = request.DateTimeSend.Ticks;
             try
             {
-                await _context.UserHomeWorkReminder.AddAsync(new UserHomeWorkReminder { HomeWorkId = data.HomeWorkId, UserId = data.UserId, DateTimeSend = data.DateOfReminder.Ticks });
+                _context.Update<UserHomeWorkReminder>(reminder);
                 await _context.SaveChangesAsync();
                 result.Result = true;
-                return result;
             }
             catch (Exception ex)
             {
-                _logger.LogCritical(ex, "saving db error");
-                return result;
+                _logger.LogError(ex, $"inner={ex.InnerException}, StackTrace={ex.StackTrace}");
             }
+            return result;
         }
     }
 }

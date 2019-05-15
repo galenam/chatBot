@@ -7,5 +7,7 @@ namespace BotConsole.Interfaces
     public interface IDBReminderRepository
     {
         Task<CreateHomeWorkReminderResponse> SaveReminderInDB(CreateHomeWorkReminderRequest data);
+
+        Task<UpdatedReminderResponse> UpdateReminder(UpdatedReminderRequest request);
     }
 }

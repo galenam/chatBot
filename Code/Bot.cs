@@ -111,7 +111,10 @@ namespace BotConsole.Code
             });
 
             var dict = new Dictionary<string, object> { { ReminderJobConst.ChatId, id },
-            { ReminderJobConst.HomeWordId, homeWork.HomeWorkId } };
+            { ReminderJobConst.HomeWordId, homeWork.HomeWorkId },
+            {ReminderJobConst.HomeworkReminderId, saveResult.Id} };
+
+            // todo : написать крон
             await _registerJob.CreateJob<IReminderJob>(ReminderJobConst.Reminder, dict, dateOfReminder);
             return saveResult != null && saveResult.Result;
         }
