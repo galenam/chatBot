@@ -19,9 +19,6 @@ namespace BotConsole.Code.Repositories
             _context = context;
             _logger = logger;
         }
-        // todo: все обращения к бд обернуть в try-catch с логированием ошибок
-
-        // todo: обновлять время напоминалки, если такая напоминалка существует
         public async Task<CreateHomeWorkReminderResponse> SaveReminderInDB(CreateHomeWorkReminderRequest data)
         {
             if (data == null)

@@ -54,9 +54,7 @@ namespace BotConsole.Code.Repositories
                 .Where(hw => hw.DateOfReadyness.HasValue && DateTime.Now.CompareTo(hw.DateOfReadyness.Value) < 0)
                 .OrderBy(hw => hw.DateOfReadyness)
                 .FirstOrDefault();
-            //todo: исправить дату today homework в ticks на сегодня+2 часа+2 минуты, получить reminder в telegram
-            // сейчас бот пишет exception времени больше (по ощущениям) 20 секунд 
-            //todo: сделать несколько еще homework в будущем, проверить, что фильтр + orderby работают правильно
+
             if (hws != null)
             {
                 result.IsExisted = true;
