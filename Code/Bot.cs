@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using BotConsole.Jobs;
 using Telegram.Bot.Types;
 using System.Text.RegularExpressions;
+using BotConsole.Extensions;
 
 namespace BotConsole.Code
 {
@@ -54,7 +55,7 @@ namespace BotConsole.Code
 
         private void BotOnReceiveError(object sender, ReceiveErrorEventArgs e)
         {
-            _logger.LogError($"InnerException={e.ApiRequestException.InnerException}, Message={e.ApiRequestException.Message}");
+            _logger.LogException(e.ApiRequestException);
         }
 
         private static async void Bot_OnMessage(object sender, MessageEventArgs e)
@@ -113,7 +114,6 @@ namespace BotConsole.Code
             var dict = new Dictionary<string, object> { { ReminderJobConst.ChatId, id },
             { ReminderJobConst.HomeWordId, homeWork.HomeWorkId },
             {ReminderJobConst.HomeworkReminderId, saveResult.Id} };
-// todo : удалить неиспользуемые классы
             await _registerJob.CreateJob<IReminderJob>(ReminderJobConst.Reminder, dict, dateOfReminder);
             return saveResult != null && saveResult.Result;
         }
@@ -134,7 +134,7 @@ namespace BotConsole.Code
             }
             catch (Exception e)
             {
-                _logger.LogError(0, e, $"Bot.Send, Inner Exception = {e.InnerException}, Stack = {e.StackTrace}");
+                _logger.LogException(e);
             }
             return false;
         }

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using BotConsole.RequestModels;
 using BotConsole.ResponseModels;
+using BotConsole.Extensions;
 
 namespace BotConsole.Code.Repositories
 {
@@ -39,7 +40,7 @@ namespace BotConsole.Code.Repositories
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, $"inner={ex.InnerException}, StackTrace={ex.StackTrace}");
+                        _logger.LogException(ex);
                     }
                 }
                 result.Id = reminder.Id;
@@ -57,7 +58,7 @@ namespace BotConsole.Code.Repositories
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"inner={ex.InnerException}, StackTrace={ex.StackTrace}");
+                    _logger.LogException(ex);
                 }
             }
             return result;
@@ -79,7 +80,7 @@ namespace BotConsole.Code.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"inner={ex.InnerException}, StackTrace={ex.StackTrace}");
+                _logger.LogException(ex);
             }
             return result;
         }

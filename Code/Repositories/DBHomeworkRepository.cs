@@ -8,6 +8,7 @@ using BotConsole.ResponseModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using System.Linq;
+using BotConsole.Extensions;
 
 namespace BotConsole.Code.Repositories
 {
@@ -90,7 +91,7 @@ namespace BotConsole.Code.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogCritical(ex, "saving db error");
+                _logger.LogException(ex);
                 return result;
             }
         }
