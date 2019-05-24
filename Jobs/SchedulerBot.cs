@@ -21,7 +21,6 @@ namespace BotConsole.Jobs
 
         public async Task<IScheduler> StartScheduler()
         {
-            // todo : удалить бд, удалить путь к бд, почистить историю коммитов
             var props = new NameValueCollection
             {
                 { "quartz.serializer.type", "binary" },

@@ -53,7 +53,6 @@ namespace BotConsole.Code.Repositories
                     await _context.UserHomeWorkReminder.AddAsync(addedReminder);
                     await _context.SaveChangesAsync();
                     result.Result = true;
-                    // todo проверить, что при добавлении новой напоминалки на дз, на которое еще нет напоминалок, возвращается Id
                     result.Id = addedReminder.Id;
                 }
                 catch (Exception ex)
